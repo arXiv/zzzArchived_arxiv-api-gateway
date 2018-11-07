@@ -1,7 +1,7 @@
 openapi: "3.0.0"
 info:
   version: "0.1.2"
-  title: "arXiv Search API"
+  title: "arXiv Query API"
   description: |
     A query API for arXiv paper metadata.
   termsOfService: "https://arxiv.org/help/general"

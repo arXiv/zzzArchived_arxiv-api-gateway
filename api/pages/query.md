@@ -6,4 +6,4 @@ template: page.html
 
 {% import "api/openapi.html" as openapi %}
 
-{{ openapi.render_schema(schemas.search.openapi.data, render_markdown) }}
+{{ openapi.render_schema(schemas.query.openapi.data, render_markdown) }}
