@@ -32,7 +32,9 @@
   {% endif %}
 </div>
 
+{% if parameter.description %}
 {{ render_markdown(parameter.description) }}
+{% endif %}
 
 <div class="">
   {% if "example" in parameter %}
@@ -76,21 +78,23 @@
 {{ render_property("", schema["items"], render_markdown) }}
 
 {% elif schema.type == "object" %}
-{% if property %}
-<span class="has-text-weight-semibold">
-  {{ property }}
-  <span class="tag">{{ schema.type }}</span>
-</span>
-{% endif %}
-<div class="box">
-  <ul class="unstyled">
-    {% for sub_property, sub_schema in schema.properties.items() %}
-    <li>
-      {{ render_property(sub_property, sub_schema, render_markdown) }}
-    </li>
-    {% endfor %}
-  </ul>
-</div>
+  {% if property %}
+  <span class="has-text-weight-semibold">
+    {{ property }}
+    <span class="tag">{{ schema.type }}</span>
+  </span>
+  {% endif %}
+  {% if schema.properties %}
+  <div class="box">
+    <ul class="unstyled">
+      {% for sub_property, sub_schema in schema.properties.items() %}
+      <li>
+        {{ render_property(sub_property, sub_schema, render_markdown) }}
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
 {% else %}
   <span class="has-text-weight-semibold">
     {{ property }}
@@ -119,8 +123,6 @@
   <dd>{{ schema.info.license.name }}</dd>
 </dl>
 
-
-
 <h3 class="title is-3">Operations</h3>
 <ul>
   {% for path, path_schema in schema.paths.items() %}
@@ -131,6 +133,10 @@
         <span class="is-family-monospace">{{ path }}</span>
         <span class="">({{ method_schema.operationId }})</span>
       </a>
+      {% if method_schema.summary %}
+      - <span>{{ method_schema.summary }}</span>
+      {% endif %}
+      {% if method_schema.responses %}
       <ul>
         {% for response_key, response_schema in method_schema.responses.items() %}
         <li>
@@ -140,6 +146,7 @@
         </li>
         {% endfor %}
       </ul>
+      {% endif %}
     </li>
     {% endfor %}
   {% endfor %}
@@ -148,66 +155,53 @@
 {% for path, path_schema in schema.paths.items() %}
   {% for method, method_schema in path_schema.items() %}
   <hr />
-  <div class="section">
+  <div class="section method-schema-section">
 
-  <a href="#{{ method_schema.operationId }}">
-    <h3 class="title is-3" id="{{ method_schema.operationId }}">
-      <span class="is-family-monospace is-uppercase">{{ method }}</span>
-      <span class="is-family-monospace">{{ path }}</span>
-      <span class="">({{ method_schema.operationId }})</span>
-    </h3>
-  </a>
-
-  <p>{{ render_markdown(method_schema.description) }}</p>
-
-  <h4 class="title is-4">Path parameters</h4>
-  <ul class="is-size-6">
-    {% for parameter in method_schema.parameters %}
-      {% if parameter.in == "path" %}
-      <li class="parameter-item">
-        {{ render_parameter(method_schema, parameter, render_markdown) }}
-      </li>
-      {% endif %}
-    {% endfor %}
-  </ul>
-
-  <h4 class="title is-4">Query parameters</h4>
-  <ul class="is-size-6">
-    {% for parameter in method_schema.parameters %}
-      {% if parameter.in == "query" %}
-      <li class="parameter-item">
-        {{ render_parameter(method_schema, parameter, render_markdown) }}
-      </li>
-      {% endif %}
-    {% endfor %}
-  </ul>
-
-
-  <a href="#{{ method_schema.operationId }}_responses">
-    <h4 class="title is-4" id="{{ method_schema.operationId }}_responses">Responses</h4>
-  </a>
-
-    {% for response_key, response_schema in method_schema.responses.items() %}
-    <a href="#{{ method_schema.operationId }}_responses_{{ response_key }}">
-      <h5 class="title is-5 is-family-monospace" id="{{ method_schema.operationId }}_responses_{{ response_key }}">
-        {{ response_key }}
-      </h5>
+    <a href="#{{ method_schema.operationId }}">
+      <h3 class="title is-3" id="{{ method_schema.operationId }}">
+        <span class="is-family-monospace is-uppercase">{{ method }}</span>
+        <span class="is-family-monospace">{{ path }}</span>
+        <span class="">({{ method_schema.operationId }})</span>
+      </h3>
     </a>
-    <p>{{ render_markdown(response_schema.description) }}</p>
-      {% for content_type, content_schema in response_schema.content.items() %}
-      <a href="#{{ method_schema.operationId }}_responses_{{ response_key }}_{{ content_type }}">
-        <h6 class="title is-6" id="{{ method_schema.operationId }}_responses_{{ response_key }}_{{ content_type }}">
+
+    {% if method_schema.summary %}
+    <p>{{ render_markdown(method_schema.summary) }}</p>
+    {% endif %}
+
+    {% if method_schema.description %}
+    <p>{{ render_markdown(method_schema.description) }}</p>
+    {% endif %}
+
+    {% if method_schema.requestBody %}
+    <h4 class="title is-4">Request body</h4>
+
+    {% for content_type, content_schema in method_schema.requestBody.content.items() %}
+      <a href="#{{ method_schema.operationId }}_requestBody_{{ response_key }}_{{ content_type }}">
+        <h6 class="title is-6" id="{{ method_schema.operationId }}_requestBody_{{ response_key }}_{{ content_type }}">
           {{ content_type }}
         </h6>
       </a>
+
+      {% if content_schema.schema %}
       <div class="box">
+
         {% if content_schema.schema.title %}
         <h6 class="title is-6">
           {{ content_schema.schema.title }}
-          {% if content_schema.schema.type %}<span class="tag">{{ content_schema.schema.type }}</span>{% endif %}
+
+          {% if content_schema.schema.type %}
+          <span class="tag">{{ content_schema.schema.type }}</span>
+          {% endif %}
+
         </h6>
         {% endif %}
-        {% if content_schema.schema.description %}<p>{{ render_markdown(content_schema.schema.description) }}</p>{% endif %}
+
+        {% if content_schema.schema.description %}
+        <p>{{ render_markdown(content_schema.schema.description) }}</p>
+        {% endif %}
+
+        {% if content_schema.schema and content_schema.schema.properties %}
         <ul class="unstyled is-size-7">
           {% for property, property_schema in content_schema.schema.properties.items() %}
           <li>
@@ -215,10 +209,104 @@
           </li>
           {% endfor %}
         </ul>
+        {% endif %}
+
       </div>
-      {% endfor %}
+      {% endif %}
+
     {% endfor %}
+    {% endif %}
+
+    {% with path_parameters = method_schema.parameters|selectattr("in", "eq", "path")|list %}
+      {% if path_parameters|length > 0 %}
+      <h4 class="title is-4">Path parameters</h4>
+      <ul class="is-size-6">
+        {% for parameter in path_parameters %}
+
+        <li class="parameter-item">
+          {{ render_parameter(method_schema, parameter, render_markdown) }}
+        </li>
+
+        {% endfor %}
+      </ul>
+      {% endif %}
+    {% endwith %}
+
+
+
+    {% with query_parameters = method_schema.parameters|selectattr("in", "eq", "query")|list %}
+      {% if query_parameters|length > 0 %}
+      <h4 class="title is-4">Query parameters</h4>
+      <ul class="is-size-6">
+        {% for parameter in query_parameters %}
+
+        <li class="parameter-item">
+          {{ render_parameter(method_schema, parameter, render_markdown) }}
+        </li>
+
+        {% endfor %}
+      </ul>
+      {% endif %}
+    {% endwith %}
+
+    <a href="#{{ method_schema.operationId }}_responses">
+      <h4 class="title is-4" id="{{ method_schema.operationId }}_responses">Responses</h4>
+    </a>
+
+    {% for response_key, response_schema in method_schema.responses.items() %}
+      <a href="#{{ method_schema.operationId }}_responses_{{ response_key }}">
+        <h5 class="title is-5 is-family-monospace" id="{{ method_schema.operationId }}_responses_{{ response_key }}">
+          {{ response_key }}
+        </h5>
+      </a>
+
+      {% if response_schema.description %}
+      <p>{{ render_markdown(response_schema.description) }}</p>
+      {% endif %}
+
+      {% if response_schema.content %}
+        {% for content_type, content_schema in response_schema.content.items() %}
+          <a href="#{{ method_schema.operationId }}_responses_{{ response_key }}_{{ content_type }}">
+            <h6 class="title is-6" id="{{ method_schema.operationId }}_responses_{{ response_key }}_{{ content_type }}">
+              {{ content_type }}
+            </h6>
+          </a>
+
+          {% if content_schema.schema %}
+          <div class="box">
+
+            {% if content_schema.schema.title %}
+            <h6 class="title is-6">
+              {{ content_schema.schema.title }}
+
+              {% if content_schema.schema.type %}
+              <span class="tag">{{ content_schema.schema.type }}</span>
+              {% endif %}
+
+            </h6>
+            {% endif %}
+
+            {% if content_schema.schema.description %}
+            <p>{{ render_markdown(content_schema.schema.description) }}</p>
+            {% endif %}
+
+            {% if content_schema.schema and content_schema.schema.properties %}
+            <ul class="unstyled is-size-7">
+              {% for property, property_schema in content_schema.schema.properties.items() %}
+              <li>
+                {{ render_property(property, property_schema, render_markdown) }}
+              </li>
+              {% endfor %}
+            </ul>
+            {% endif %}
+
+          </div>
+          {% endif %}
+
+        {% endfor %}
+      {% endif %}
+    {% endfor %}
+    </div>
   {% endfor %}
-  </div>
 {% endfor %}
 {% endmacro %}
